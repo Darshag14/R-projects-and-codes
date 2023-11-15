@@ -1,0 +1,515 @@
+---
+title: "Distributions"
+author: "Dr. Isuru Dassanayake"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Discrete Distributions
+
+# 1. Binomial Distribution
+
+### Make random samples
+
+$X \sim Binomial(20,0.4)$
+
+```{r}
+n = 20
+p = 0.4
+rbinom(1,n,p) #one binomial distributed random variable with (n,p)
+
+
+rbinom(5,n,p) #five binomial distributed random variables with (n,p)
+```
+
+### Compute and plot probability~ mass function
+
+$P(X=3) ?$
+
+```{r}
+dbinom(3,n,p)
+dbinom(3.3,n,p) #Why wrong?
+```
+
+Plot pmf 
+
+```{r}
+x0 = dbinom(0:n,n,p) # probability at each point of x
+plot(0:n,x0,type = 'h', lwd = 3)
+```
+
+_The sum of the pmf equals 1._
+
+```{r}
+sum(dbinom(0:100,100,.3))
+```
+
+
+
+### Compute pbinom() in terms of dbinom()
+
+$P(X<5)?$
+
+```{r}
+pbinom(4,n,p) # cumulative probability values.
+
+sum(dbinom(0:4,n,p)) 
+
+```
+
+### Estimate dbinom() using rbinom()
+
+$P(X=4)$
+
+```{r}
+dbinom(4,n,p) # Exact value
+
+
+#by simulation
+mean(rbinom(1000,n,p) == 4)
+```
+
+
+### Make a large random sample and plot a histogram.
+
+_The histogram of the sample looks similar to, but is not identical to the histogram plot of the pmf in the previous picture._
+
+```{r}
+x1 <- rbinom(1000000,n,p)
+hist(x1, prob = T, breaks = seq(-.5,20.5,by = 1))
+```
+
+### Cumulative distribution function.
+
+$P(X\le5)$
+
+```{r}
+pbinom(5,n,p)
+```
+
+Plot the CDF.
+
+```{r}
+plot(0:n,pbinom(0:n,n,p), type = 's')
+```
+
+### Guess the relation between the three values before computing them.
+
+```{r}
+pbinom(5,n,p)
+pbinom(5.1,n,p)
+pbinom(4.99,n,p)
+```
+
+_Why?_
+\newpage
+
+## CDF
+
+### Plot the cdf as a step function
+
+```{r}
+plot(0:n,pbinom(0:n,n,p), type = 's')
+grid(col = 3)
+```
+
+
+## Quantiles 
+
+### Explain the behavior.
+
+```{r}
+qbinom(.3,n,p)
+qbinom(.35,n,p)
+qbinom(.4722,n,p)
+qbinom(.2799,n,p)
+
+```
+
+```{r}
+qbinom(pbinom(6,n,p),n,p)
+
+```
+
+
+
+```{r}
+pbinom(qbinom(.333,n,p),n,p)
+```
+
+_*Explain this! Why is this not 0.333?*_
+
+
+\newpage
+
+# 2. Geometric and Negative Binomial Distributions 
+
+### Plot the probability mass functions for a few cases 
+
+```{r}
+n = 4
+p = .2
+K = 30
+plot(0:K, dgeom(0:K,p), type = 'h')
+plot(0:K, dnbinom(0:K,n,p), type = 'h')
+```
+
+# 3. Negative Binomial Distribution 
+
+### Example 1:
+
+An oil company has a p = 0.20 chance of striking oil when drilling a well. What is the probability the company drills x = 7 wells to strike oil r = 3 times?
+
+_If we are drilling 7 wells but strike oil only 3 times , that means our number of failures is 4 until 3 successes. Therefore, we need to find the probability _
+
+$$P(X=4)$$
+
+```{r}
+r = 3
+p = 0.20
+n = 7 - r
+# exact
+dnbinom(x = n, size = r, prob = p)
+```
+
+Let's try a simulation;
+
+```{r}
+# simulated
+mean(rnbinom(n = 10000, size = r, prob = p) == n)
+
+```
+
+Cumulative Probability of X failed trials to achieve 3rd success.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+data.frame(x = 1:20, 
+           pmf = dnbinom(x = 1:20, size = r, prob = p),
+           cdf = pnbinom(q = 1:20, size = r, prob = p, lower.tail = TRUE)) %>%
+ggplot(aes(x = factor(x), y = cdf)) +
+  geom_col() +
+  geom_text(
+    aes(label = round(cdf,2), y = cdf + 0.01),
+    size = 3,
+    vjust = 0
+  ) +
+  labs(title = "Cumulative Probability of X = x failed trials to achieve 3rd success",
+       subtitle = "NB(3,.2)",
+       x = "Failed Trials (x)",
+       y = "probability") 
+```
+\newpage
+
+# 4. Poisson Distribution
+
+```{r}
+p5=dpois(0:10,5)
+p0.9=dpois(0:10,0.9)
+plot(p5)
+plot(p0.9)
+```
+
+## Pmf and CDF of Poisson Distribution 
+
+```{r}
+plot(0:K, dpois(0:K, 5), type = 'h') #pmf
+```
+
+```{r}
+plot(0:K, ppois(0:K, 5), type = 's') #cdf
+```
+
+
+\newpage
+
+# 5.  Hypergeometric Distribution
+
+
+The phyper() function allows us to calculate hypergeometric probabilities. The first argument is the set of possible values for which we want the probabilities. Then come the parameters, in the order population size, number of good elements, sample size.
+
+## Example 2: 
+
+What is the probability of selecting x = 14 red marbles from a sample of k = 20 taken from an urn containing m = 70 red marbles and n = 30 green marbles?
+
+```{r}
+x = 14 #number of successive draws
+m = 70 #total number of successes inside the urn
+n = 30 #total number of failures inside the urn
+k = 20 #number of draws(trails)
+
+dhyper(x = x, m = m, n = n, k = k)
+```
+
+Plotting for different number of success draws
+
+```{r}
+library(ggplot2)
+library(dplyr)
+options(scipen = 999, digits = 2) # sig digits
+
+density = dhyper(x = 1:20, m = m, n = n, k = k)
+
+data.frame(red = 1:20, density) %>%
+  mutate(red14 = ifelse(red == 14, "x = 14", "other")) %>%
+ggplot(aes(x = factor(red), y = density, fill = red14)) +
+  geom_col() +
+  geom_text(
+    aes(label = round(density,2), y = density + 0.01),
+    size = 3,
+    vjust = 0
+  ) +
+  labs(title = "PMF of X = x Red Balls",
+       subtitle = "Hypergeometric(k = 20, M = 70, N = 30)",
+       x = "Number of red balls (x)",
+       y = "Density")
+```
+
+## Example 3: Aces in a Five-Card Poker Hand
+
+
+```{r}
+x = seq(0,4) #possible number of aces
+m = 4 # number of success elements in population = ace cards
+n = 48  # number of failure elements in population=everything except ace cards
+k = 5  # simple random sample size(five-card hand)
+
+phyper(x,m,n,k)
+dhyper(x,m,n,k)
+
+```
+
+Those are the chances of all the different possible numbers of aces in a poker hand. They are rather hard to read, so let's try rounding them.
+
+```{r}
+round(phyper(x,m,n,k), 3)
+```
+
+
+The histogram of the distribution can be drawn using Plot.
+
+```{r}
+ace_dist = dhyper(x,m,n,k)
+plot(x,ace_dist, main ='Number of Aces in a 5-Card Hand',type='h')
+
+```
+
+# Continuous Distributions
+
+
+
+## 1. Exponential Distibution
+
+Multiple Exponential Distribution Plots:
+
+```{r}
+
+par(mfrow=c(2,2))
+
+hist(rexp(10))
+hist(rexp(100))
+hist(rexp(1000))
+hist(rexp(10000))
+```
+
+```{r}
+library(ggplot2)
+
+x_lower <- 0
+x_upper <- 5  
+
+max_height2 <- max(dexp(x_lower:x_upper, rate = 1, log = FALSE),
+                   dexp(x_lower:x_upper, rate = 2,  log = FALSE),
+                   dexp(x_lower:x_upper, rate = 0.5, log = FALSE))
+
+max_height2
+
+ggplot(data.frame(x = c(x_lower, x_upper)), aes(x = x)) + xlim(x_lower, x_upper) + 
+  ylim(0, max_height2) +
+  stat_function(fun = dexp, args = list(rate = 0.5), aes(colour = "0.5")) + 
+  stat_function(fun = dexp, args = list(rate = 1), aes(colour = "1")) + 
+  stat_function(fun = dexp, args = list(rate = 2), aes(colour = "2")) + 
+  scale_color_manual("Rate", values = c("blue", "green", "red")) +
+  labs(x = "\n x", y = "f(x) \n", 
+       title = "Exponential Distribution Density Plots \n") + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        axis.title.x = element_text(face="bold", colour="blue", size = 12),
+        axis.title.y = element_text(face="bold", colour="blue", size = 12),
+        legend.title = element_text(face="bold", size = 10),
+        legend.position = "top")
+
+# References:
+# https://stackoverflow.com/questions/31792634/adding-legend-to-ggplot2-with-multiple-lines-on-plot
+# https://stackoverflow.com/questions/19950219/using-legend-with-stat-function-in-ggplot2
+```
+
+\newpage
+
+# 2. Normal Distribution
+
+## Standard Deviation vs Variablity
+
+```{r}
+set.seed(37)
+sample1 <- rnorm(5, mean=10, sd=10)
+sample2 <- rnorm(5, mean=10, sd=0.1)
+
+
+sample1
+sample2
+
+
+
+round(sample1)
+round(sample2)
+```
+Less standard deviation means less variability in data.
+ 
+ 
+Theoretical density plot for a standard normal distribution as follows
+
+```{r}
+cumProb <- seq(.0001,.9999,length = 1000)
+quants <- qnorm(cumProb, mean = 0, sd = 1) #standard normal distribution
+den <- dnorm(quants, mean = 0, sd = 1)
+
+tibi1 =tibble(cumProb,quants,den)
+
+ggplot(tibi1, aes(x = quants,y = den)) +
+  geom_polygon(fill = 'cyan',color = 'black',size = .5, alpha=.5) +
+  labs(x = 'Quantiles',y = 'Density',
+     title='Standard Normal Density  Plot') 
+```
+
+
+Cumulative Probability plot for a standard normal distribution
+ 
+```{r}
+
+ggplot(tibi1,aes(x = quants,y = cumProb))+
+  geom_line(size=.7) +
+  labs(x = 'Quantiles',y = 'Cumulative Probability',
+     title = 'Standard Normal Cumulative Probability Plot') 
+```
+
+Using rnorm() to create histograms: Let's generate three different vectors of random numbers from a normal distribution
+
+```{r}
+set.seed(33)
+n10 <- rnorm(10, mean = 70, sd = 5)
+n100 <- rnorm(100, mean = 70, sd = 5)
+n10000 <-  rnorm(10000, mean = 70, sd = 5)
+
+# Let's just look at one of the vectors
+n10
+```
+
+Which histogram do you think will be most centered around the true mean of 70??
+```{r}
+
+par(mfrow=c(1,3))
+
+# The breaks argument specifies how many bars are in the histogram
+hist(n10, breaks = 5)
+hist(n100, breaks = 20)
+hist(n10000, breaks = 100)
+```
+
+
+
+
+
+\newpage
+
+
+# 3. Gamma Distribution
+
+```{r}
+
+library(ggplot2)
+
+x_lower <- 0
+x_upper <- 5
+
+max_height2 <- max(dgamma(x_lower:x_upper, shape = 1, scale = 1), 
+                   dgamma(x_lower:x_upper, shape = 2, scale = 1),
+                  dgamma(x_lower:x_upper, shape = 2, scale = 3))
+
+
+ggplot(data.frame(x = c(x_lower, x_upper)), aes(x = x)) + xlim(x_lower, x_upper) + 
+  ylim(0, max_height2) + #g.1
+  stat_function(fun = dgamma, args = list(shape = 1, scale = 1), aes(colour = "g.1")) + 
+  stat_function(fun = dgamma, args = list(shape = 2, scale = 1), aes(colour = "g.2")) + #g.2
+  stat_function(fun = dgamma, args = list(shape = 2, scale = 3), aes(colour = "g.3")) + #g.3
+  scale_color_manual("Distributions", values = c("blue", "green", "red")) +
+  labs(x = "\n x", y = "f(x) \n", 
+       title = "Gamma Distribution Density Plots \n") + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        axis.title.x = element_text(face="bold", colour="blue", size = 12),
+        axis.title.y = element_text(face="bold", colour="blue", size = 12),
+        legend.title = element_text(face="bold", size = 10),
+        legend.position = "top")
+
+```
+
+### Example 4:
+
+On average, someone sends a money order once per 15 minutes. What is the probability someone sends 10 money orders in less than 3 hours?
+
+$X\sim Gamma(alpha=10,beta=15/60)$
+$P(X<3)?$
+
+```{r}
+alpha = 10
+beta = 15 / 60
+x = 3
+# exact
+pgamma(q = x, shape = alpha, scale = beta)
+
+# simulated
+mean(rgamma(n = 10000, shape = alpha, scale = beta) <= x)
+```
+
+
+
+# Expected Values
+
+### Example 5: Binomial distribution 
+
+```{r}
+n = 30
+p = .4
+
+sum((0:n)*dbinom(0:n,n,p))
+sum((0:n)*dbinom(0:n,n,p)) -12  # determine how close this is to the exact value
+                                # the difference is due to round off error
+mean(rbinom(10000,n,p))
+n*p
+```
+
+### Example 6: Poisson distribution 
+
+```{r}
+lambda = 4
+n = 20 # truncate the infinite sum
+sum((0:n)*dpois(0:n, lambda))
+sum((0:n)*dpois(0:n, lambda)) - 4 # determine how close this is to the exact value
+                                  #  the difference is mainly due to truncation error
+mean(rpois(10000,lambda))    
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

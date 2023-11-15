@@ -1,0 +1,359 @@
+---
+title: "Family Type"
+author: "Dr. Isuru Dassanayake"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Consider the article from Washington Post in 2013.
+
+
+```{r, message=FALSE}
+library(lattice)
+library(tidyverse)
+```
+
+```{r,echo=FALSE}
+hw <- theme_gray()+ theme(
+  plot.title=element_text(hjust=0.5),
+  plot.subtitle=element_text(hjust=0.5),
+  plot.caption=element_text(hjust=-.5),
+
+  strip.text.y = element_blank(),
+  strip.background=element_rect(fill=rgb(.9,.95,1),
+    colour=gray(.5), size=.2),
+
+  panel.border=element_rect(fill=FALSE,colour=gray(.70)),
+  panel.grid.minor.y = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.spacing.x = unit(0.10,"cm"),
+  panel.spacing.y = unit(0.05,"cm"),
+
+# axis.ticks.y= element_blank()
+  axis.ticks=element_blank(),
+  axis.text=element_text(colour="black"),
+  axis.text.y=element_text(margin=margin(0,3,0,3)),
+  axis.text.x=element_text(margin=margin(-1,0,3,0))
+)
+
+```
+
+
+
+
+Enter the data;
+
+&nbsp;
+
+```{r}
+white <- c(22, 50,  8,  2, 13,  6)
+black <- c(5, 24, 13, 24, 20, 15)
+hispanic <- c(21, 33,  9,  7, 20, 9)
+asian <- c(24, 53,  4,  1, 12,  5)
+
+mat <- cbind(white, black, hispanic, asian)
+mat
+
+```
+
+&nbsp;
+
+The family type percents for each race were rounded to integers. Due to rounding the total for each race is not 100. For example the total percent for white is 101.
+
+
+&nbsp;
+
+Add row and column labels;
+
+&nbsp;
+
+```{r}
+type <- c( "Married, Father Working", "Married, Both Working",
+          "Divorced Mother","Never-married Mother",
+          "Other", "Grandparents")
+race <- c("White","Black","Hispanic","Asian")
+
+
+colnames(mat) <- race
+rownames(mat) <- type
+mat
+```
+
+&nbsp;
+
+
+Using lattice package let's try to plot
+```{r}
+oneColumn = dotplot(mat, groups = FALSE,
+  layout = c(1, 4), aspect = .7,
+  origin = 0,type = c("p","h"),
+  main = "Who is Raising the Children?",
+  xlab = "Race Rounded Percents\nMay Not Total 100",
+  scales = list(x = list(tck = 0, alternating = FALSE)),
+  panel = function(...){
+    panel.fill(rgb(.9,.9,.9))
+    panel.grid(h = 0,v = -1,col = "white",lwd = 2)
+    panel.dotplot(col = rgb(0,.5,1),cex = 1.1,...)
+  }
+)
+oneColumn
+
+```
+
+
+&nbsp;
+
+```{r}
+dotplot(mat, groups = FALSE,
+  layout = c(2,2),aspect = .7,
+  origin = 0,type = c("p","h"),
+  main = "Who is Raising the Children?",
+  xlab = "Race Rounded Percents\nMay Not Total 100",
+  scales = list( x = list(tck = 0, alternating = FALSE)),
+  panel = function(...){
+    panel.fill(rgb(.9,.9,.9))
+    panel.grid(h = 0, v = -1, col = "white", lwd = 2)
+    panel.dotplot(col = rgb(0,.5,1),cex = 1.1,...)
+  }
+)
+```
+
+&nbsp;
+
+```{r}
+dotplot(mat,groups = FALSE,
+  layout = c(4,1), aspect = .7,
+  origin = 0,type = c("p","h"),
+  main = "Who is Raising the Children?",
+  xlab = "Race Rounded Percents\nMay Not Total 100",
+  scales = list(x = list(tck = 0, alternating = FALSE)),
+  panel = function(...){
+    panel.fill(rgb(.9,.9,.9))
+    panel.grid(h = 0,v = -1,col = "white",lwd = 2)
+    panel.dotplot(col = rgb(0,.5,1),cex = 1.1,...)
+  }
+)
+```
+
+&nbsp;
+
+
+People may have race and family type biases and so prefer a particular ordering. However in the data exploration context the goal is let the data show us the patterns. Here we will sort the rows and column to bring similar rows close together and similar columns close together. We will start by sorting the columns. Each column has vector of values. We seek a summary value for each column/rows that we can use to sort the column/rows. Since column values are all in the same units, percents, we can use the column/row mean is the basis for sorting column/rows. In other cases we might choose the median, the minimum, maximum, the standard deviation or other summary statistic is the basis for sorting. This approach is reasonable when the data values are in the same units or are unitless. 
+
+&nbsp;
+
+
+```{r}
+typeMeans <- rowMeans(mat)
+typeMeans
+
+
+typeOrd <- order(-typeMeans) # in descending order
+cbind(mat,typeMeans)[typeOrd,]
+
+```
+
+&nbsp;
+
+```{r}
+dotplot(mat[typeOrd,],groups = FALSE,
+  layout = c(2,2),aspect = .7,
+  type = c("p","l"),
+  main = "Who is Raising the Children?",
+  xlab = "Race Rounded Percents\nMay Not Total 100",
+  scales = list(x = list(tck = 0, alternating =  FALSE)),
+  panel = function(...){
+    panel.fill(rgb(.9,.9,.9))
+    panel.grid(h = 0,v = -1,col = "white",lwd = 2)
+    panel.dotplot(col = rgb(0,.5,1),cex = 1.1,...)
+  }
+)
+```
+
+&nbsp;
+
+The next step is to sort the columns. Here we can’t just compute the average of each column as a basis for sorting because all of the columns should sum to 100% and the averages from dividing by 6 should all be the same. Since the column value units of measure are the same, percent, we can use either of two related methods to compute values as a basis for sorting. These are classical multidimensional scaling and principle components. We could use the first principal component to sort the columns. Here we introduce classical multidimensional scaling since it is likely to be less familiar. It is not necessarily better.
+We have four races as cases. With 6 values each, we can think of races as four points is 6 dimensional space so can compute the distance between all pairs of points. 
+
+&nbsp;
+
+```{r}
+matOrder = mat[typeOrd,]
+raceRow <- t(matOrder) # transpose of the matrix
+raceRow
+
+
+EucDis <- dist(raceRow)
+round(EucDis)
+
+```
+
+&nbsp;
+
+We can see the smallest distance, 6, is between Asian and White points and the largest distance, 44, is between Asian and Black points.
+Classical multidimensional scaling creates points in lower dimensions whose distance between point pairs form a matrix that approximates the matrix of six dimensional distances. The approximation is the best possible in terms of sums of squares difference between the elements of the two distance matrices. The approximation gets worse and points are created in lower and lower dimensions. For graphical representations researchers often seek points two or three dimensions. Here we just want to order the points so we seek four points in one dimension and so put k=1 as the argument in the function below.
+
+
+
+```{r}
+racePoints <- cmdscale(EucDis,k = 1)
+round(racePoints)
+
+```
+
+&nbsp;
+
+Now let's sort the races according to the above values;
+
+&nbsp;
+
+```{r}
+raceOrder = order(-round(racePoints))
+
+matfinal = t(raceRow[raceOrder,])
+matfinal # final sorted matrix
+
+```
+&nbsp;
+
+Above table or transpose of the above table provides a good framework for visualizations.
+
+```{r}
+dotplot(matfinal,groups = FALSE,
+  layout = c(4,1),aspect = .7,
+  type = c("p","l"),
+  main = "Who is Raising the Children?",
+  xlab = "Race Rounded Percents\nMay Not Total 100",
+  scales = list(x = list(tck = 0, alternating =  FALSE)),
+  panel = function(...){
+    panel.fill(rgb(.9,.9,.9))
+    panel.grid(h = 0,v = -1,col = "white",lwd = 2)
+    panel.dotplot(col = rgb(0,.5,1),cex = 1.1,...)
+  }
+)
+```
+
+&nbsp;
+
+### Visualizing using ggplot
+
+&nbsp;
+
+With the lattice package, we could reorder matrix rows and columns. This let us avoid the explicit modification of factor levels to control row name and the panel order. With ggplot2 we need a data.frame or tibbles with factors whose level control the row plotting order that the panel layout order.
+
+&nbsp;
+
+Now let's create a data.frame from a matrix and including factors. We first created a data.frame from a sorted matrix above, then include the rownames as factors and finally use the gather function in the tidyr package to make it an indexed data.frame.
+
+```{r}
+
+famRace <- as.data.frame(matfinal) # make a data.frame
+famRace
+
+types = rownames(famRace)
+famRace$Types = factor(types, ordered = T, levels = rev(types) ) #including row labels as a new column and categorize them as a factor
+famRace
+
+rownames(famRace) = NULL # removing row names from the data set (Optional)
+famRace
+```
+
+&nbsp;
+
+Now make an indexed data.frame that stacks the race column values
+
+&nbsp;
+
+```{r}
+famRaceType <- gather(famRace, key = Race, value = Percent,Asian:Black,
+  factor_key = TRUE)
+
+famRaceType
+```
+
+factor_key = TRUE kepts the level order specified rather than sorting in alphabet order.
+
+&nbsp;
+
+```{r}
+#let's complete this together
+
+
+
+```
+
+
+
+
+
+```{r}
+ggplot(famRaceType, aes(x= Percent,y=Types,fill = Race,group = Race)) +
+  geom_point(shape = 21, size = 2.8) + geom_line(aes(color = Race)) +
+  labs(x = "Percent",y="",title = "Who's Raising the Children?")+
+  facet_wrap(~Race)+ scale_x_continuous(breaks=seq(0,50,by =10)) + hw + 
+  theme(legend.position ="none")
+```
+
+```{r}
+ggplot(famRaceType, aes(x= Percent,y=Types,fill = Race,group = Race)) +
+  geom_point(shape = 21, size = 2.8) + geom_line(aes(color = Race)) +
+  scale_x_continuous(breaks=seq(0,50,by =10)) +
+  labs(x = "Percent",y ="",title = "Who's Raising the Children?")+
+  facet_grid(~Race) + hw + theme(legend.position ="none") 
+```
+
+
+
+
+&nbsp;
+
+Create two perceptual groups in each panel. We will use geom_path lines to connect the top three dots and to connect the bottom three dots.
+
+geom_path connects the dot in a group using the row order in the dataframe. We need put the rows in the desired family type order.
+
+
+
+
+Use family type numbers 1:6 and cut() to create 2 groups of 3 family types.
+
+Family types with numbers 1:3 will be in the (0, 3.5] group 4:6 will be in the (3.5, 6] group.
+
+```{r}
+famSorted <- mutate(famRaceType,
+  G2 = cut(as.numeric(Types),
+         breaks = c(0, 3.5, 6))
+)
+
+famSorted
+```
+
+Above we can see the structure group of three in the G2 column. The factor patterns may be easier to see when converted to integers.
+
+```{r}
+
+cbind(as.numeric(famSorted$Race),
+      as.numeric(famSorted$Types),
+      as.numeric(famSorted$G2))
+```
+
+
+
+Use paths to link the dots in each perceptual group
+
+
+```{r}
+ggplot(famSorted,aes(x = Percent,y = Types,group = G2))+
+  geom_path(color = "blue",size = 1) +
+  geom_point(shape = 21,fill = "blue", color = "black", size = 2.7) +
+  geom_point(shape = 21,fill = "white",color = 'white',size = 1) +
+  labs(x = "Percent",y = "",
+       title="Who's Raising the Children?") +
+  facet_grid(~Race) + hw
+```
+
+
+
+
+
+

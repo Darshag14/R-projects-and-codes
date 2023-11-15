@@ -1,0 +1,294 @@
+---
+title: "Mothers at Risk"
+author: "Dr. Isuru Dassanayake"
+output:
+  html_document: default
+---
+
+```{r, message=FALSE}
+library(tidyverse)
+library(gridExtra)
+```
+
+```{r,echo=FALSE}
+hw <- theme_gray()+ theme(
+  plot.title=element_text(hjust=0.5),
+  plot.subtitle=element_text(hjust=0.5),
+  plot.caption=element_text(hjust=-.5),
+
+  strip.text.y = element_blank(),
+  strip.background=element_rect(fill=rgb(.9,.95,1),
+    colour=gray(.5), size=.2),
+
+  panel.border=element_rect(fill=FALSE,colour=gray(.70)),
+  panel.grid.minor.y = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.spacing.x = unit(0.10,"cm"),
+  panel.spacing.y = unit(0.05,"cm"),
+
+# axis.ticks.y= element_blank()
+  axis.ticks=element_blank(),
+  axis.text=element_text(colour="black"),
+  axis.text.y=element_text(margin=margin(0,3,0,3)),
+  axis.text.x=element_text(margin=margin(-1,0,3,0))
+)
+```
+
+```{r,echo=FALSE}
+hwLeft <- theme_gray()+ theme(
+  plot.title=element_blank(),
+  plot.subtitle=element_text(hjust=0.5),
+  plot.caption=element_text(hjust=-.5),
+
+  strip.text.y = element_blank(),
+  strip.background=element_rect(fill=rgb(.9,.95,1),
+    colour=gray(.5), size=.2),
+
+  panel.border=element_rect(fill=FALSE,colour=gray(.70)),
+  panel.grid.minor.y = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.spacing.x = unit(0.10,"cm"),
+  panel.spacing.y = unit(0.05,"cm"),
+
+# axis.ticks.y= element_blank()
+  axis.ticks=element_blank(),
+  axis.text=element_text(colour="black"),
+  axis.text.y=element_text(margin=margin(0,3,0,3)),
+  axis.text.x=element_text(margin=margin(-1,0,3,0))
+)
+```
+
+```{r, echo=FALSE}
+
+hwRight <- theme_gray()+ theme(
+  plot.title=element_blank(),
+  plot.subtitle=element_text(hjust=0.5),
+  plot.caption=element_text(hjust=-.5),
+
+  strip.text.y = element_blank(),
+  strip.background=element_rect(fill=rgb(.9,.95,1),
+    colour=gray(.5), size=.2),
+
+  panel.border=element_rect(fill=FALSE,colour=gray(.70)),
+  panel.grid.minor.y = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.spacing.x = unit(0.10,"cm"),
+  panel.spacing.y = unit(0.05,"cm"),
+
+# axis.ticks.y= element_blank()
+  axis.ticks=element_blank(),
+  axis.text=element_text(colour="black"),
+  axis.text.y=element_blank(),
+  axis.text.x=element_text(margin=margin(-1,0,3,0))
+)
+```
+
+&nbsp;
+
+#### 1. Enter data as vectors
+```{r}
+attend <- c(25,8,12,31,2,17,15,30,8,8,6,16,24,26,24,15,47,38,44,20,31)
+deaths <- c(18,17,16,16,16,15,15,15,15,14,14,14,13,13,12,12,12,12,11,10,10)
+nams <- c('Sierra Leone','Afghanistan','Bhutan','Guinea','Somalia','Angola','Chad',
+          'Mozambique','Nepal','Ethiopia','Eritrea','Yemen','Burundi','Rwanda',
+          'Mali','Niger','Senegal','Uganda','Gambia','Haiti','Nigeria')
+```
+
+&nbsp;
+
+#### 2. Make a tibble
+```{r}
+motherDeaths = tibble(Countries = nams,
+  DeathRates = deaths, Attended = attend)
+
+#write.csv(motherDeaths,file = "motherDeaths.csv",
+#  row.names = FALSE)
+
+```
+
+&nbsp;
+
+#### 3. Make a scatterplot with a smooth
+```{r}
+plt <-  ggplot(motherDeaths,
+  aes(x = Attended, y = DeathRates)) +
+  geom_smooth(method="loess",span=.90,method.args=list(degree=1),
+      size=1.5,color="blue") +
+  geom_point(shape=21,size=4,color="black",fill="red") +
+  labs(x="Percent Births Attended By Trained Personnel",
+       y="Maternal Deaths Per 1000 Live Births",
+       title="Maternal Risk 1990-1996") + hw
+plt
+```
+
+&nbsp;
+
+#### 4. Select Countries and Add labels to Points
+
+Below %>% pipes the motherDeaths data.frame into the first argument of filter(). The filter function selects rows of the data.frame.
+```{r}
+ptLabs <- motherDeaths %>% filter(Countries %in%
+     c('Sierra Leone','Guinea','Haiti','Nigeria'))
+ptLabs
+```
+
+Below we use the selected Country names as labels. We have nudged the labels upward by 45 y-axis units.
+
+```{r}
+plt + geom_label(data = ptLabs,
+      aes(label = Countries),
+      nudge_y = .9)
+```
+
+
+&nbsp;
+
+#### 5. Make row labeled plot with juxtaposed columns for two different variables 
+
+
+The ggplot facet_grid and facet_wrap are often useful for producing multiple panel layouts. We will make frequent use of this latter.
+
+The script below shows an alternative way to produce multiple panel plots. It uses grid.arrange() from the gridExtra package.
+
+We save the plots as named objects and put them the panels. We can control the number rows and columns of panels.  As as far as I know we cannot control the horizontal spacing between the panels using grid.arrange Likely this can be done with ggtable.
+
+&nbsp;
+
+##### 5.1 Test the left column dot plot
+
+```{r}
+ggplot(motherDeaths,aes(x = Attended,
+  y = reorder(Countries,-Attended))) +
+  geom_point(shape = 21,fill = "cyan",
+    color = 'black',size = 3) +
+  labs(x = "Percent Births Attended\nBy Trained Personnel",
+     y = "Countries") +  hw
+
+```
+
+&nbsp;
+
+##### 5.2 Make the Left column Dot Plot with the Country Names
+
+Omit the title and the y axis label use the theme in hwLeft
+
+```{r}
+pltLeft <- ggplot(motherDeaths,aes(x = Attended,
+  y = reorder(Countries,-Attended))) +
+  geom_point(shape = 21,fill = "cyan",
+    color = 'black',size = 3.5) +
+  labs(y = "",
+     x = "Percent Births\n Attended By Trained Personnel") +
+  hwLeft
+
+pltLeft
+```
+
+&nbsp;
+
+##### 5.3 Make the Right column Dot Plots without the Country names 
+
+Omit the title
+```{r}
+pltRight <- ggplot(motherDeaths,aes(x = DeathRates,
+  y = reorder(Countries,-Attended))) +
+  geom_point(shape = 21,fill = "red",
+    color = 'black',size = 3.5) +
+  labs(y = "",
+     x = "Maternal Deaths\nPer 1000 Live Births") +  hwRight
+pltRight
+
+```
+
+&nbsp;
+
+##### 5.4 put the two together and add a title using grid.arrange
+
+```{r}
+grid.arrange(pltLeft,pltRight,ncol = 2,widths = c(2.6,2),
+  top = "Maternal Risk Giving Birth\n For Selected Countries 1990-1965")
+```
+
+&nbsp;
+
+#### 6. Creating Perceptual Groups of size 3
+
+Here we modify the data.frame and give it a new name.
+
+The construction:
+
+1. Arranges the data.frame rows so the countries are in the top down order that we want in the plot.
+2. Change the country factor level to be in the reverse order of the top down order consistent with plot y-axis convention.
+3. Adds a row perceptual row grouping factorwith levels the keep groups of rows in the same top down order.
+
+&nbsp;
+
+##### 6.1 Sort the data frame rows so the Country order match that in 5. above Revise the factor level match.
+
+##### Get the topDown order
+```{r}
+newLevels <- levels( with(motherDeaths,reorder(Countries,-Attended)))
+topDown <- rev(newLevels)
+topDown
+```
+
+
+
+##### Rearrange rows
+```{r}
+subs <- match(topDown,motherDeaths$Countries)
+mdSort <- motherDeaths[subs,]  # rearrange rows
+```
+
+
+
+##### Make factor levels provide the top down order
+```{r}
+mdSort$Countries <- factor(topDown,rev(topDown))
+
+ #or
+# Sort the rows in the desired order
+
+ord <- order(motherDeaths$Attended)
+mdSort <- motherDeaths[ord,]
+mdSort
+
+```
+
+
+&nbsp;
+
+##### 6.2  Add a grouping factor
+
+We have 21 rows. Here we use 7 groups (labeled G1 to G7) of size 3. 
+ 
+Another reasonable choice is a 5-5-1-5-5 pattern the facet grid argument space="free_y" will give less space to the group of size 1.
+
+```{r}
+nam <- paste0("G",7:1)
+Grp <- factor(rep(nam,each = 3),levels=nam)
+mdSort$Grp <- Grp
+
+
+pLeft <- ggplot(mdSort,aes(x = Attended, y = Countries)) +
+  geom_point(shape = 21,fill = "cyan",color = 'black',size = 2.5)+
+  facet_grid(Grp~.,scales = "free_y") +
+  labs(y = "",
+     x = "Percent Births\n Attended By Trained Personnel") + hwLeft
+pLeft
+
+pRight <- ggplot(mdSort,aes(x = DeathRates, y = Countries)) +
+  geom_point(shape = 21,fill = "red",color = 'black',size = 2.5) +
+  facet_grid(Grp~.,scales = "free_y") +
+  labs(y="", x="Maternal Deaths\nPer 1000 Live Births") + hwRight
+pRight
+
+grid.arrange(pLeft,pRight,ncol=2,widths=c(2.6,2),
+  top="Maternal Risk Giving Birth\n For Selected Countries 1990-1965")
+```
+
+
+
+
+
+
